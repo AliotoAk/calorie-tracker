@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Tracker 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Forces the background to cover the whole screen and animate */
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100%;
+            transition: background 0.5s ease;
+            background-attachment: fixed;
+        }
+
+        /* Initial Light Mode Background */
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        /* Dark Mode CSS Overrides */
+        .dark-mode .text-slate-700 { color: #cbd5e1; }
+        .dark-mode .bg-slate-50 { background-color: #1e293b; border-color: #334155; }
+        .dark-mode .text-slate-400 { color: #94a3b8; }
+        
+        .dark-mode main {
+            border: 1px solid #334155;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <main id="mainCard" class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-auto mt-6 sm:mt-10 transition-all duration-500">
+        
+        <div class="flex justify-end mb-4">
+            <button id="themeBtn" class="bg-slate-100 p-2 rounded-lg hover:bg-slate-200 transition">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </div>
+
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Calorie Tracker</h1>
+            <p class="text-slate-500 mt-2">Track your daily progress</p>
+        </header>
+
+        <section class="space-y-3 mb-8">
+            <input id="foodInput" type="text" placeholder="What did you eat?" 
+                   class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-slate-800">
+            <input id="calorieInput" type="number" placeholder="Calories" 
+                   class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-slate-800">
+            <button id="addBtn" class="w-full bg-green-600 hover:bg-green-500 transition hover:scale-[1.02] text-white font-bold py-3 rounded-lg shadow-md active:scale-95">
+                Add Entry
+            </button>
+        </section>
+
+        <div class="mb-8">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Add</p>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="quickAdd('Apple', 95)" class="bg-slate-100 hover:bg-green-100 px-3 py-1 rounded-full text-sm text-slate-600 transition">+ Apple</button>
+                <button onclick="quickAdd('Coffee', 5)" class="bg-slate-100 hover:bg-green-100 px-3 py-1 rounded-full text-sm text-slate-600 transition">+ Coffee</button>
+                <button onclick="quickAdd('Protein Shake', 160)" class="bg-slate-100 hover:bg-green-100 px-3 py-1 rounded-full text-sm text-slate-600 transition">+ Protein</button>
+            </div>
+        </div>
+
+        <section>
+            <h2 class="font-bold text-slate-700 mb-4">Today's Log</h2>
+            <ul id="logList" class="space-y-2"></ul>
+        </section>
+
+        <footer class="mt-8 pt-6 border-t border-slate-100 text-center">
+            <div class="w-full bg-slate-200 h-4 rounded-full mb-2 overflow-hidden">
+                <div id="progressBar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <h3 id="totalDisplay" class="text-2xl font-bold text-slate-800">Total: 0 / 2,000 kcal</h3>
+            
+            <div class="flex gap-2 mt-6">
+                <button id="downloadBtn" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700 transition">
+                    Download Report
+                </button>
+                <button id="resetBtn" class="px-4 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold hover:bg-red-50 hover:text-red-500 transition">
+                    Reset
+                </button>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        const foodInput = document.querySelector('#foodInput');
+        const calorieInput = document.querySelector('#calorieInput');
+        const addBtn = document.querySelector('#addBtn');
+        const logList = document.querySelector('#logList');
+        const totalDisplay = document.querySelector('#totalDisplay');
+        const resetBtn = document.querySelector('#resetBtn');
+        const progressBar = document.querySelector('#progressBar');
+        const themeBtn = document.querySelector('#themeBtn');
+        const themeIcon = document.querySelector('#themeIcon');
+        const body = document.body;
+        const mainCard = document.querySelector('#mainCard');
+
+        let totalCalories = parseInt(localStorage.getItem('dailyTotal')) || 0;
+        
+        // Initial setup
+        updateUI();
+
+        function updateUI() {
+            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal`;
+            let percentage = (totalCalories / 2000) * 100;
+            progressBar.style.width = Math.min(percentage, 100) + "%";
+
+            if (totalCalories > 2000) {
+                progressBar.classList.replace('bg-green-500', 'bg-red-500');
+                totalDisplay.classList.replace('text-slate-800', 'text-red-600');
+            } else {
+                progressBar.classList.replace('bg-red-500', 'bg-green-500');
+                totalDisplay.classList.replace('text-red-600', 'text-slate-800');
+            }
+            localStorage.setItem('dailyTotal', totalCalories);
+        }
+
+        addBtn.addEventListener('click', () => {
+            const food = foodInput.value;
+            const calories = parseInt(calorieInput.value);
+
+            if (food === '' || isNaN(calories)) {
+                alert("Please fill in both boxes!");
+                return;
+            }
+
+            totalCalories += calories;
+            
+            const li = document.createElement('li');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            li.innerHTML = `
+                <div class="flex justify-between items-center bg-slate-50 p-3 mb-2 rounded-lg border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <button class="delete-btn text-red-400 hover:text-red-600 font-bold px-2">✕</button>
+                        <div class="flex flex-col">
+                            <span class="text-slate-700 font-medium">${food}</span>
+                            <span class="text-[10px] uppercase text-slate-400 font-bold">${timeString}</span>
+                        </div>
+                    </div>
+                    <span class="text-green-600 font-bold">${calories} kcal</span>
+                </div>
+            `;
+            
+            li.querySelector('.delete-btn').addEventListener('click', () => {
+                totalCalories -= calories;
+                li.remove();
+                updateUI();
+            });
+
+            logList.appendChild(li);
+            updateUI();
+            foodInput.value = '';
+            calorieInput.value = '';
+        });
+
+        function quickAdd(name, cals) {
+            foodInput.value = name;
+            calorieInput.value = cals;
+            addBtn.click();
+        }
+
+        resetBtn.addEventListener('click', () => {
+            if(confirm("Reset all entries for today?")) {
+                totalCalories = 0;
+                logList.innerHTML = "";
+                updateUI();
+                localStorage.clear();
+            }
+        });
+
+        // Theme Toggle Logic
+        themeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            
+            themeIcon.innerText = isDark ? "☀️" : "🌙";
+            body.style.background = isDark 
+                ? "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" 
+                : "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)";
+            
+            mainCard.style.backgroundColor = isDark ? "#0f172a" : "white";
+            mainCard.style.color = isDark ? "white" : "black";
+        });
+
+        // Download Report
+        document.querySelector('#downloadBtn').addEventListener('click', () => {
+            let reportText = `CALORIE REPORT - ${new Date().toLocaleDateString()}\n`;
+            reportText += `--------------------------\n`;
+            document.querySelectorAll('#logList li').forEach(item => {
+                reportText += `- ${item.innerText.replace('✕', '').trim()}\n`;
+            });
+            reportText += `--------------------------\nTOTAL: ${totalCalories} kcal`;
+            
+            const blob = new Blob([reportText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Calories-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
