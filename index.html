@@ -6,149 +6,118 @@
     <title>Calorie Tracker 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        html, body { margin: 0; min-height: 100vh; width: 100%; transition: background 0.5s ease; background-attachment: fixed; }
-        body { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
-        .dark-mode { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; }
-        .dark-mode main { background-color: #0f172a !important; color: white !important; border: 1px solid #334155; }
-        .dark-mode .bg-slate-50 { background-color: #1e293b !important; border-color: #334155; }
-        .dark-mode input { background-color: #1e293b; color: white; border-color: #334155; }
+        html, body { margin: 0; min-height: 100vh; width: 100%; transition: background 0.5s ease; }
+        body { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); background-attachment: fixed; }
+        
+        /* DARK MODE STYLES */
+        .dark-mode { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; color: white; }
+        .dark-mode #mainCard { background-color: #1e293b !important; color: white !important; border: 1px solid #334155; }
+        .dark-mode input { background-color: #334155 !important; color: white !important; border-color: #475569 !important; }
+        .dark-mode .log-item { background-color: #334155 !important; border-color: #475569 !important; color: white !important; }
+        .dark-mode h1, .dark-mode h2, .dark-mode #totalDisplay { color: white !important; }
     </style>
 </head>
 <body class="p-4">
-    <main id="mainCard" class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-auto mt-10 transition-all duration-500">
+    <main id="mainCard" class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-auto mt-10 transition-all">
         <div class="flex justify-end mb-4">
-            <button id="themeBtn" class="bg-slate-100 p-2 rounded-lg hover:bg-slate-200 transition">
+            <button id="themeBtn" class="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">
                 <span id="themeIcon">🌙</span>
             </button>
         </div>
 
         <header class="mb-6 text-center">
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Calorie Tracker</h1>
-            <p class="text-slate-500 mt-2">Track your daily progress</p>
+            <h1 class="text-3xl font-black text-slate-800">Calorie Tracker</h1>
         </header>
 
         <section class="space-y-3 mb-8">
-            <input id="foodInput" type="text" placeholder="What did you eat?" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500">
-            <input id="calorieInput" type="number" placeholder="Calories" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500">
-            <button id="addBtn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-md transition transform active:scale-95">
+            <input id="foodInput" type="text" placeholder="What did you eat?" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500 text-black">
+            <input id="calorieInput" type="number" placeholder="Calories" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500 text-black">
+            <button id="addBtn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-md transition active:scale-95">
                 Add Entry
             </button>
         </section>
 
-        <section>
-            <h2 class="font-bold text-slate-700 mb-4">Today's Log</h2>
-            <ul id="logList" class="space-y-2 mb-8"></ul>
-        </section>
+        <ul id="logList" class="space-y-2 mb-8"></ul>
 
         <footer class="border-t pt-6 text-center">
             <div class="w-full bg-slate-200 h-4 rounded-full mb-2 overflow-hidden">
                 <div id="progressBar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
             </div>
             <h3 id="totalDisplay" class="text-2xl font-bold text-slate-800">Total: 0 / 2,000 kcal</h3>
-            <div class="flex gap-2 mt-6">
-                <button id="resetBtn" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold hover:text-red-500 transition">Reset Day</button>
-            </div>
+            <button id="resetBtn" class="mt-6 text-slate-400 text-sm underline hover:text-red-500">Reset Day</button>
         </footer>
     </main>
 
     <script>
-    // --- IMPROVED SOUND GENERATORS ---
-    async function playAddSound() {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // WAKE UP THE BROWSER AUDIO
-        if (ctx.state === 'suspended') {
-            await ctx.resume();
+        let audioCtx = null;
+
+        function playSound(freq, type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } catch (e) { console.log("Audio blocked"); }
         }
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.1);
-    }
+        const foodInput = document.querySelector('#foodInput');
+        const calorieInput = document.querySelector('#calorieInput');
+        const addBtn = document.querySelector('#addBtn');
+        const logList = document.querySelector('#logList');
+        const totalDisplay = document.querySelector('#totalDisplay');
+        const progressBar = document.querySelector('#progressBar');
+        const themeBtn = document.querySelector('#themeBtn');
+        const body = document.body;
 
-    async function playClickSound() {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        if (ctx.state === 'suspended') {
-            await ctx.resume();
+        let totalCalories = parseInt(localStorage.getItem('dailyTotal')) || 0;
+
+        function updateUI() {
+            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal`;
+            let perc = (totalCalories / 2000) * 100;
+            progressBar.style.width = Math.min(perc, 100) + "%";
+            progressBar.className = totalCalories > 2000 ? "bg-red-500 h-full transition-all" : "bg-green-500 h-full transition-all";
+            localStorage.setItem('dailyTotal', totalCalories);
         }
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(150, ctx.currentTime);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.05);
-    }
-
-    // --- APP LOGIC ---
-    const foodInput = document.querySelector('#foodInput');
-    const calorieInput = document.querySelector('#calorieInput');
-    const addBtn = document.querySelector('#addBtn');
-    const logList = document.querySelector('#logList');
-    const totalDisplay = document.querySelector('#totalDisplay');
-    const progressBar = document.querySelector('#progressBar');
-    const themeBtn = document.querySelector('#themeBtn');
-
-    let totalCalories = parseInt(localStorage.getItem('dailyTotal')) || 0;
-
-    function updateUI() {
-        totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal`;
-        let perc = (totalCalories / 2000) * 100;
-        progressBar.style.width = Math.min(perc, 100) + "%";
-        
-        if (totalCalories > 2000) {
-            progressBar.classList.replace('bg-green-500', 'bg-red-500');
-        } else {
-            progressBar.classList.replace('bg-red-500', 'bg-green-500');
-        }
-        localStorage.setItem('dailyTotal', totalCalories);
-    }
-
-    updateUI();
-
-    addBtn.addEventListener('click', () => {
-        const food = foodInput.value;
-        const cals = parseInt(calorieInput.value);
-        if (!food || !cals) return alert("Fill both boxes!");
-
-        playAddSound(); // Triggers the wake-up and the beep
-        
-        totalCalories += cals;
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
-                <span class="font-medium text-slate-700">${food}</span>
-                <span class="text-green-600 font-bold">${cals} kcal</span>
-            </div>`;
-        logList.appendChild(li);
         updateUI();
-        foodInput.value = ''; calorieInput.value = '';
-    });
 
-    themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        playClickSound();
-        const isDark = document.body.classList.contains('dark-mode');
-        document.querySelector('#themeIcon').innerText = isDark ? "☀️" : "🌙";
-    });
+        addBtn.addEventListener('click', () => {
+            const food = foodInput.value.trim();
+            const cals = parseInt(calorieInput.value);
+            if (!food || isNaN(cals)) return alert("Enter food and calories!");
 
-    document.querySelector('#resetBtn').addEventListener('click', () => {
-        if(confirm("Clear everything?")) {
-            totalCalories = 0;
-            logList.innerHTML = "";
+            playSound(880, 'sine');
+            totalCalories += cals;
+
+            const li = document.createElement('li');
+            li.className = "log-item flex justify-between bg-slate-50 p-3 rounded-lg border text-slate-800 transition-colors";
+            li.innerHTML = `<span>${food}</span><span class="font-bold text-green-600">${cals} kcal</span>`;
+            
+            logList.appendChild(li);
             updateUI();
-            localStorage.clear();
-        }
-    });
-</script>
+            foodInput.value = ''; calorieInput.value = '';
+        });
+
+        themeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            playSound(150, 'square');
+            document.querySelector('#themeIcon').innerText = body.classList.contains('dark-mode') ? "☀️" : "🌙";
+        });
+
+        document.querySelector('#resetBtn').addEventListener('click', () => {
+            if(confirm("Clear everything?")) {
+                totalCalories = 0;
+                logList.innerHTML = "";
+                updateUI();
+                localStorage.clear();
+            }
+        });
+    </script>
 </body>
 </html>
