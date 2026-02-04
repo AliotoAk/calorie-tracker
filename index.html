@@ -90,4 +90,54 @@
         let totalCalories = parseInt(localStorage.getItem('dailyTotal')) || 0;
 
         function updateUI() {
-            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal
+            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal`;
+            let perc = (totalCalories / 2000) * 100;
+            progressBar.style.width = Math.min(perc, 100) + "%";
+            
+            if (totalCalories > 2000) {
+                progressBar.classList.replace('bg-green-500', 'bg-red-500');
+            } else {
+                progressBar.classList.replace('bg-red-500', 'bg-green-500');
+            }
+            localStorage.setItem('dailyTotal', totalCalories);
+        }
+
+        updateUI();
+
+        addBtn.addEventListener('click', () => {
+            const food = foodInput.value;
+            const cals = parseInt(calorieInput.value);
+            if (!food || !cals) return alert("Fill both boxes!");
+
+            try { playAddSound(); } catch(e) {} // Play the "Beep"
+            
+            totalCalories += cals;
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+                    <span class="font-medium">${food}</span>
+                    <span class="text-green-600 font-bold">${cals} kcal</span>
+                </div>`;
+            logList.appendChild(li);
+            updateUI();
+            foodInput.value = ''; calorieInput.value = '';
+        });
+
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            try { playClickSound(); } catch(e) {}
+            const isDark = document.body.classList.contains('dark-mode');
+            document.querySelector('#themeIcon').innerText = isDark ? "☀️" : "🌙";
+        });
+
+        document.querySelector('#resetBtn').addEventListener('click', () => {
+            if(confirm("Clear everything?")) {
+                totalCalories = 0;
+                logList.innerHTML = "";
+                updateUI();
+                localStorage.clear();
+            }
+        });
+    </script>
+</body>
+</html>
