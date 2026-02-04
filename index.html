@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calorie Tracker 2026</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"><script>
+        // PASTE THE SOUNDS HERE (At the very start of the script)
+        const addSound = new Audio("https://actions.google.com/sounds/v1/foley/electronic_chime.ogg");
+        const deleteSound = new Audio("https://actions.google.com/sounds/v1/foley/button_click.ogg");
+        const resetSound = new Audio("https://actions.google.com/sounds/v1/foley/slap_slap.ogg");
+
+        // ... the rest of your existing code ...</script>
 
     <style>
         /* Forces the background to cover the whole screen and animate */
@@ -131,6 +137,9 @@
                 return;
             }
 
+            // ADD THIS LINE HERE:
+                    addSound.play();
+ 
             totalCalories += calories;
             
             const li = document.createElement('li');
