@@ -10,114 +10,84 @@
         body { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
         .dark-mode { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; }
         .dark-mode main { background-color: #0f172a !important; color: white !important; border: 1px solid #334155; }
+        .dark-mode .bg-slate-50 { background-color: #1e293b !important; border-color: #334155; }
+        .dark-mode input { background-color: #1e293b; color: white; border-color: #334155; }
     </style>
 </head>
 <body class="p-4">
-    <main id="mainCard" class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-auto mt-10">
+    <main id="mainCard" class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-auto mt-10 transition-all duration-500">
         <div class="flex justify-end mb-4">
-            <button id="themeBtn" class="bg-slate-100 p-2 rounded-lg"> <span id="themeIcon">🌙</span> </button>
+            <button id="themeBtn" class="bg-slate-100 p-2 rounded-lg hover:bg-slate-200 transition">
+                <span id="themeIcon">🌙</span>
+            </button>
         </div>
+
         <header class="mb-6 text-center">
-            <h1 class="text-3xl font-black text-slate-800">Calorie Tracker</h1>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Calorie Tracker</h1>
+            <p class="text-slate-500 mt-2">Track your daily progress</p>
         </header>
+
         <section class="space-y-3 mb-8">
-            <input id="foodInput" type="text" placeholder="What did you eat?" class="w-full p-3 border rounded-lg text-black">
-            <input id="calorieInput" type="number" placeholder="Calories" class="w-full p-3 border rounded-lg text-black">
-            <button id="addBtn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg">Add Entry</button>
+            <input id="foodInput" type="text" placeholder="What did you eat?" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+            <input id="calorieInput" type="number" placeholder="Calories" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+            <button id="addBtn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-md transition transform active:scale-95">
+                Add Entry
+            </button>
         </section>
-        <ul id="logList" class="space-y-2 mb-8"></ul>
+
+        <section>
+            <h2 class="font-bold text-slate-700 mb-4">Today's Log</h2>
+            <ul id="logList" class="space-y-2 mb-8"></ul>
+        </section>
+
         <footer class="border-t pt-6 text-center">
             <div class="w-full bg-slate-200 h-4 rounded-full mb-2 overflow-hidden">
-                <div id="progressBar" class="bg-green-500 h-full transition-all" style="width: 0%"></div>
+                <div id="progressBar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
             </div>
-            <h3 id="totalDisplay" class="text-2xl font-bold">Total: 0 / 2,000 kcal</h3>
-            <button id="resetBtn" class="mt-4 text-sm text-slate-400 underline">Reset Day</button>
+            <h3 id="totalDisplay" class="text-2xl font-bold text-slate-800">Total: 0 / 2,000 kcal</h3>
+            <div class="flex gap-2 mt-6">
+                <button id="resetBtn" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold hover:text-red-500 transition">Reset Day</button>
+            </div>
         </footer>
     </main>
 
     <script>
-       // This creates a "Success" beep using your device's hardware
-function playAddSound() {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+        // --- SOUND GENERATORS ---
+        function playAddSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.1);
+        }
 
-    osc.type = 'sine'; // Smooth sound
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch
-    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+        function playClickSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.05);
+        }
 
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
-}
-
-// This creates a low "Click" for deleting/resetting
-function playClickSound() {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(150, ctx.currentTime);
-
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.05);
-}
+        // --- APP LOGIC ---
         const foodInput = document.querySelector('#foodInput');
         const calorieInput = document.querySelector('#calorieInput');
         const addBtn = document.querySelector('#addBtn');
         const logList = document.querySelector('#logList');
         const totalDisplay = document.querySelector('#totalDisplay');
         const progressBar = document.querySelector('#progressBar');
+        const themeBtn = document.querySelector('#themeBtn');
 
         let totalCalories = parseInt(localStorage.getItem('dailyTotal')) || 0;
 
         function updateUI() {
-            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal`;
-            let perc = (totalCalories / 2000) * 100;
-            progressBar.style.width = Math.min(perc, 100) + "%";
-            localStorage.setItem('dailyTotal', totalCalories);
-        }
-
-        updateUI();
-
-        addBtn.addEventListener('click', () => {
-            const food = foodInput.value;
-            const cals = parseInt(calorieInput.value);
-            if (!food || !cals) return alert("Fill both boxes!");
-
-           playAddSound(); catch(() => {}); // Play sound
-            totalCalories += cals;
-
-            const li = document.createElement('li');
-            li.innerHTML = `<div class="flex justify-between bg-slate-50 p-3 rounded-lg border text-black">
-                <span>${food}</span>
-                <span class="font-bold">${cals} kcal</span>
-            </div>`;
-            logList.appendChild(li);
-            updateUI();
-            foodInput.value = ''; calorieInput.value = '';
-        });
-
-        document.querySelector('#themeBtn').addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            playClickSound(); catch(() => {});
-        });
-
-        document.querySelector('#resetBtn').addEventListener('click', () => {
-            totalCalories = 0; logList.innerHTML = ""; updateUI(); localStorage.clear();
-        });
-    </script>
-</body>
-</html>
+            totalDisplay.innerText = `Total: ${totalCalories} / 2,000 kcal
